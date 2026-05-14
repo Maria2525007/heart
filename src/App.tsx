@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Terminal, Lock, Heart as HeartIcon, Sparkles } from 'lucide-react';
 import TextHeart from './components/TextHeart';
@@ -25,6 +25,28 @@ const Typewriter = ({ text, delay = 50, onComplete }: { text: string, delay?: nu
 export default function App() {
   const [stage, setStage] = useState<'console' | 'reveal'>('console');
   const [consoleFinished, setConsoleFinished] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    const audio = new Audio(`${import.meta.env.BASE_URL}angel.mp3`);
+    audio.loop = true;
+    audio.volume = 0.5;
+    audioRef.current = audio;
+
+    const tryPlay = () => {
+      audio.play().catch(() => {
+        // autoplay blocked — wait for first user interaction
+        const unlock = () => {
+          audio.play();
+          document.removeEventListener('click', unlock);
+        };
+        document.addEventListener('click', unlock, { once: true });
+      });
+    };
+
+    tryPlay();
+    return () => { audio.pause(); };
+  }, []);
 
   const handleReveal = useCallback(() => {
     if (stage === 'console' && consoleFinished) {
