@@ -37,9 +37,19 @@ export default function App() {
     const audio = new Audio(`${import.meta.env.BASE_URL}angel.mp3`);
     audio.loop = true;
     audio.volume = 0.5;
+    audio.muted = true;
     audioRef.current = audio;
 
-    audio.play().then(() => { audioStarted.current = true; }).catch(() => {});
+    audio.play().then(() => {
+      audio.muted = false;
+      audioStarted.current = true;
+    }).catch(() => {
+      // iOS Safari and strict browsers — fall back to first interaction
+      audio.muted = false;
+      document.addEventListener('click', () => {
+        audio.play().then(() => { audioStarted.current = true; }).catch(() => {});
+      }, { once: true });
+    });
 
     return () => { audio.pause(); };
   }, []);
