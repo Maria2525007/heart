@@ -171,7 +171,7 @@ export default function App() {
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ duration: 1.5 }}
-                  className="z-20 text-center"
+                  className="z-20 text-center translate-y-[1cm]"
                 >
                   <h2 className="text-pink-deep font-mono text-xl tracking-[0.3em] uppercase glow-text mb-2">
                     Decrypted
