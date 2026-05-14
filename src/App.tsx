@@ -28,6 +28,25 @@ export default function App() {
   const [heartComplete, setHeartComplete] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioStarted = useRef(false);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+
+  const setupAnalyser = (audio: HTMLAudioElement) => {
+    if (audioCtxRef.current) return;
+    try {
+      const audioCtx = new AudioContext();
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 512;
+      analyser.smoothingTimeConstant = 0.6;
+      const source = audioCtx.createMediaElementSource(audio);
+      source.connect(analyser);
+      analyser.connect(audioCtx.destination);
+      audioCtxRef.current = audioCtx;
+      analyserRef.current = analyser;
+    } catch {
+      // beat detection unavailable
+    }
+  };
 
   const startAudio = useCallback(() => {
     if (audioStarted.current || !audioRef.current) return;
@@ -44,11 +63,14 @@ export default function App() {
     audio.play().then(() => {
       audio.muted = false;
       audioStarted.current = true;
+      setupAnalyser(audio);
     }).catch(() => {
-      // iOS Safari and strict browsers — fall back to first interaction
       audio.muted = false;
       document.addEventListener('click', () => {
-        audio.play().then(() => { audioStarted.current = true; }).catch(() => {});
+        audio.play().then(() => {
+          audioStarted.current = true;
+          setupAnalyser(audio);
+        }).catch(() => {});
       }, { once: true });
     });
 
@@ -63,12 +85,12 @@ export default function App() {
   }, [stage, consoleFinished, startAudio]);
 
   return (
-    <div 
+    <div
       onClick={handleReveal}
       className={`relative min-h-screen w-full flex items-center justify-center bg-[#050505] selection:bg-pink-deep/30 ${stage === 'console' && consoleFinished ? 'cursor-pointer' : ''}`}
     >
       <div className="scanline" />
-      
+
       <AnimatePresence mode="wait">
         {stage === 'console' ? (
           <motion.div
@@ -81,23 +103,23 @@ export default function App() {
             <div className="space-y-2">
               <div className="flex gap-2 text-pink-soft/60">
                 <span>[system]</span>
-                <Typewriter 
-                  text="Initializing heart.PROTOCOL_v2.0..." 
-                  delay={30} 
+                <Typewriter
+                  text="Initializing heart.PROTOCOL_v2.0..."
+                  delay={30}
                   onComplete={() => setConsoleFinished(true)}
                 />
               </div>
-              
+
               <div className="flex gap-2 h-6">
                 <span>[status]</span>
                 {consoleFinished && (
-                    <motion.span 
-                        initial={{ opacity: 0 }} 
-                        animate={{ opacity: 1 }} 
-                        className="text-green-400"
-                    >
-                        READY
-                    </motion.span>
+                  <motion.span
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-green-400"
+                  >
+                    READY
+                  </motion.span>
                 )}
               </div>
 
@@ -110,7 +132,7 @@ export default function App() {
                   <p className="text-white/40 italic">
                     {">"} One encrypted package found for you.
                   </p>
-                  
+
                   <button
                     id="decrypt-button"
                     onClick={(e) => {
@@ -124,7 +146,7 @@ export default function App() {
                     <span className="font-mono tracking-widest uppercase text-xs">Decrypt Message</span>
                     <span className="terminal-cursor" />
                   </button>
-                  
+
                   <p className="text-[10px] text-white/20 animate-pulse">
                     (or just click anywhere)
                   </p>
@@ -139,7 +161,7 @@ export default function App() {
             animate={{ opacity: 1 }}
             className="relative w-full h-screen flex items-center justify-center overflow-hidden"
           >
-            <TextHeart onComplete={() => setHeartComplete(true)} />
+            <TextHeart analyserRef={analyserRef} onComplete={() => setHeartComplete(true)} />
 
             <AnimatePresence>
               {heartComplete && (
@@ -170,15 +192,14 @@ export default function App() {
               )}
             </AnimatePresence>
 
-            {/* Subtle tech overlays */}
             <div className="absolute top-8 left-8 text-[10px] font-mono text-white/10 uppercase tracking-widest space-y-1">
-                <div>ln: 420</div>
-                <div>id: 0xDEADBEEF</div>
-                <div>type: organic_emotion</div>
+              <div>ln: 420</div>
+              <div>id: 0xDEADBEEF</div>
+              <div>type: organic_emotion</div>
             </div>
-            
+
             <div className="absolute bottom-8 right-8 text-[10px] font-mono text-white/10 uppercase tracking-widest">
-                heart_reveal // success
+              heart_reveal // success
             </div>
           </motion.div>
         )}
@@ -186,4 +207,3 @@ export default function App() {
     </div>
   );
 }
-
