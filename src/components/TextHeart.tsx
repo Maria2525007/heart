@@ -47,7 +47,7 @@ export default function TextHeart() {
           y: centerY + y * scale,
           alpha: 0,
           targetAlpha: 0.8 + Math.random() * 0.2,
-          delay: Math.random() * 2000
+          delay: Math.random() * 36000
         });
       }
 
@@ -62,7 +62,7 @@ export default function TextHeart() {
               y: centerY + y * scale * s,
               alpha: 0,
               targetAlpha: 0.4 + Math.random() * 0.4,
-              delay: Math.random() * 3000
+              delay: Math.random() * 40000
             });
           }
       }
@@ -78,7 +78,7 @@ export default function TextHeart() {
       
       points.forEach(p => {
         if (elapsed > p.delay) {
-            p.alpha += (p.targetAlpha - p.alpha) * 0.02;
+            p.alpha += (p.targetAlpha - p.alpha) * 0.008;
         }
 
         ctx.fillStyle = `rgba(255, 77, 109, ${p.alpha})`;
