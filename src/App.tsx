@@ -26,6 +26,12 @@ export default function App() {
   const [stage, setStage] = useState<'console' | 'reveal'>('console');
   const [consoleFinished, setConsoleFinished] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioStarted = useRef(false);
+
+  const startAudio = useCallback(() => {
+    if (audioStarted.current || !audioRef.current) return;
+    audioRef.current.play().then(() => { audioStarted.current = true; }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const audio = new Audio(`${import.meta.env.BASE_URL}angel.mp3`);
@@ -33,26 +39,17 @@ export default function App() {
     audio.volume = 0.5;
     audioRef.current = audio;
 
-    const tryPlay = () => {
-      audio.play().catch(() => {
-        // autoplay blocked — wait for first user interaction
-        const unlock = () => {
-          audio.play();
-          document.removeEventListener('click', unlock);
-        };
-        document.addEventListener('click', unlock, { once: true });
-      });
-    };
+    audio.play().then(() => { audioStarted.current = true; }).catch(() => {});
 
-    tryPlay();
     return () => { audio.pause(); };
   }, []);
 
   const handleReveal = useCallback(() => {
+    startAudio();
     if (stage === 'console' && consoleFinished) {
       setStage('reveal');
     }
-  }, [stage, consoleFinished]);
+  }, [stage, consoleFinished, startAudio]);
 
   return (
     <div 
@@ -107,6 +104,7 @@ export default function App() {
                     id="decrypt-button"
                     onClick={(e) => {
                       e.stopPropagation();
+                      startAudio();
                       setStage('reveal');
                     }}
                     className="group flex items-center gap-3 px-6 py-3 border border-pink-deep/30 bg-pink-deep/5 hover:bg-pink-deep/10 text-pink-soft transition-all duration-300 pointer-events-auto"
@@ -146,6 +144,7 @@ export default function App() {
               <motion.button
                 onClick={(e) => {
                   e.stopPropagation();
+                  startAudio();
                   setStage('console');
                 }}
                 className="text-white/20 hover:text-white/60 transition-colors uppercase text-[10px] tracking-widest font-mono"
