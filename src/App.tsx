@@ -31,27 +31,32 @@ export default function App() {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
 
-  const setupAnalyser = (audio: HTMLAudioElement) => {
-    if (audioCtxRef.current) return;
+  const setupAnalyser = useCallback(() => {
+    if (audioCtxRef.current || !audioRef.current) return;
     try {
       const audioCtx = new AudioContext();
+      audioCtx.resume().catch(() => {});
       const analyser = audioCtx.createAnalyser();
       analyser.fftSize = 512;
       analyser.smoothingTimeConstant = 0.6;
-      const source = audioCtx.createMediaElementSource(audio);
+      const source = audioCtx.createMediaElementSource(audioRef.current);
       source.connect(analyser);
       analyser.connect(audioCtx.destination);
       audioCtxRef.current = audioCtx;
       analyserRef.current = analyser;
     } catch {
-      // beat detection unavailable
+      // beat detection unavailable, timer-based fallback will be used
     }
-  };
+  }, []);
 
   const startAudio = useCallback(() => {
-    if (audioStarted.current || !audioRef.current) return;
-    audioRef.current.play().then(() => { audioStarted.current = true; }).catch(() => {});
-  }, []);
+    if (!audioRef.current) return;
+    if (!audioStarted.current) {
+      audioRef.current.play().then(() => { audioStarted.current = true; }).catch(() => {});
+    }
+    // Set up beat detection on first user gesture (guarantees AudioContext can run)
+    setupAnalyser();
+  }, [setupAnalyser]);
 
   useEffect(() => {
     const audio = new Audio(`${import.meta.env.BASE_URL}angel.mp3`);
@@ -63,14 +68,10 @@ export default function App() {
     audio.play().then(() => {
       audio.muted = false;
       audioStarted.current = true;
-      setupAnalyser(audio);
     }).catch(() => {
       audio.muted = false;
       document.addEventListener('click', () => {
-        audio.play().then(() => {
-          audioStarted.current = true;
-          setupAnalyser(audio);
-        }).catch(() => {});
+        audio.play().then(() => { audioStarted.current = true; }).catch(() => {});
       }, { once: true });
     });
 
